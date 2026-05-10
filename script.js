@@ -10,11 +10,169 @@ const perspectiveCamera = new THREE.PerspectiveCamera(
 	1000
 );
 
-perspectiveCamera.position.set(20, 20, 20);
-perspectiveCamera.lookAt(0, 0, 0);
+perspectiveCamera.position.set(50, 60, 50);
+perspectiveCamera.lookAt(40, 0, 40);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 //
+
+function animate() {
+	requestAnimationFrame(animate);
+
+	renderer.render(scene, currentCamera);
+}
+
+animate();
+
+//
+
+const geometry = new THREE.BoxGeometry(4, 2, 4);
+const material = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+//
+
+const placesData = Array.from({ length: 100 }, (_, i) => ({
+	id: `shop_${i}`,
+	name: `Shop ${i}`,
+	width: 3 + Math.random() * 3,
+	depth: 3 + Math.random() * 3,
+	color: Math.random() * 0xffffff,
+}));
+
+//
+
+const spacing = 8;
+const gridSize = 10;
+
+placesData.forEach((place, index) => {
+	const geometry = new THREE.BoxGeometry(place.width, 2, place.depth);
+
+	const material = new THREE.MeshBasicMaterial({
+		color: place.color,
+	});
+
+	const mesh = new THREE.Mesh(geometry, material);
+
+	const row = Math.floor(index / gridSize);
+	const col = index % gridSize;
+
+	mesh.position.x = col * spacing;
+	mesh.position.z = row * spacing;
+
+	mesh.userData = place;
+
+	const canvas = document.createElement('canvas');
+	canvas.width = 256;
+	canvas.height = 64;
+
+	const ctx = canvas.getContext('2d');
+
+	ctx.fillStyle = 'white';
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+	ctx.fillStyle = 'black';
+	ctx.font = '24px Arial';
+	ctx.textAlign = 'center';
+
+	ctx.fillText(place.name, canvas.width / 2, 40);
+
+	const texture = new THREE.CanvasTexture(canvas);
+
+	const spriteMaterial = new THREE.SpriteMaterial({
+		map: texture,
+	});
+
+	const sprite = new THREE.Sprite(spriteMaterial);
+
+	sprite.scale.set(8, 2, 1);
+
+	sprite.position.set(0, 2.5, 0);
+
+	mesh.add(sprite);
+
+	scene.add(mesh);
+});
+
+//
+
+const aspect = window.innerWidth / window.innerHeight;
+const d = 50;
+
+const orthoCamera = new THREE.OrthographicCamera(
+	-d * aspect,
+	d * aspect,
+	d,
+	-d,
+	0.1,
+	1000
+);
+
+orthoCamera.position.set(40, 100, 40);
+orthoCamera.lookAt(40, 0, 40);
+
+//
+
+let is3D = true;
+let currentCamera = perspectiveCamera;
+
+document.getElementById('toggleView').onclick = () => {
+	is3D = !is3D;
+	currentCamera = is3D ? perspectiveCamera : orthoCamera;
+};
+
+renderer.render(scene, currentCamera);
+
+//
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+window.addEventListener('mousemove', (event) => {
+	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+window.addEventListener('click', () => {
+	raycaster.setFromCamera(mouse, currentCamera);
+
+	const intersects = raycaster.intersectObjects(scene.children, true);
+
+	const found = intersects.find(
+		(item) => item.object.type === 'Mesh'
+	);
+
+	if (found) {
+		hovered = found.object;
+		hovered.material.color.set(0xffff00);
+	}
+
+	if (intersects.length > 0) {
+		const obj = intersects[0].object;
+		console.log(obj.userData);
+	}
+});
+
+//
+
+let hovered = null;
+
+window.addEventListener('mousemove', () => {
+	raycaster.setFromCamera(mouse, currentCamera);
+	const intersects = raycaster.intersectObjects(scene.children);
+
+	if (hovered) {
+		hovered.material.color.set(hovered.userData.color);
+		hovered = null;
+	}
+
+	if (intersects.length > 0) {
+		hovered = intersects[0].object;
+		hovered.material.color.set(0xffff00);
+	}
+});
