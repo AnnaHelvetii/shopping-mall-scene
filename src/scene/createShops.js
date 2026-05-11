@@ -1,72 +1,91 @@
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
 export function createShops(scene, placesData, renderer) {
-	const shopMeshes = [];
-	const padding = 3;
-	const maxRowWidth = 100;
-	let currentX = 0, currentZ = 0, currentRowDepth = 0;
+    const shopMeshes = [];
+    const GAP = 1.5;
+    const MAX_ROW_WIDTH = 180; 
+    const group = new THREE.Group();
+    let rows = [], tempRow = [], curRowWidth = 0;
 
-	placesData.forEach((place) => {
-		if (currentX + place.width > maxRowWidth) {
-			currentX = 0;
-			currentZ += currentRowDepth + padding;
-			currentRowDepth = 0;
-		}
-		currentRowDepth = Math.max(currentRowDepth, place.depth);
+    placesData.forEach((place) => {
+        const w = Math.max(place.width, 8);
+        if (curRowWidth + w + GAP > MAX_ROW_WIDTH) {
+            rows.push(tempRow); tempRow = []; curRowWidth = 0;
+        }
+        tempRow.push(place); curRowWidth += w + GAP;
+    });
+    if (tempRow.length > 0) rows.push(tempRow);
 
-		const materials = [];
-		for (let i = 0; i < 6; i++) {
-			materials.push(new THREE.MeshStandardMaterial({ color: place.color }));
-		}
+    let curZ = 0;
+    rows.forEach((row, rowIndex) => {
+        const rowMaxDepth = Math.max(...row.map(p => p.depth));
+        const sumOriginalWidth = row.reduce((sum, p) => sum + p.width, 0);
+        const scaleFactor = (MAX_ROW_WIDTH - (row.length - 1) * GAP) / sumOriginalWidth;
 
-		const geometry = new THREE.BoxGeometry(place.width, 2, place.depth);
-		const mesh = new THREE.Mesh(geometry, materials);
-		mesh.position.set(currentX + place.width / 2, 1, currentZ + place.depth / 2);
-		mesh.userData = place;
+        let rowX = 0;
+        row.forEach((place) => {
+            const finalWidth = place.width * scaleFactor;
+            const geometry = new THREE.BoxGeometry(finalWidth, 2, place.depth);
+            const materials = Array.from({length: 6}, () => new THREE.MeshStandardMaterial({ color: place.color }));
+            const mesh = new THREE.Mesh(geometry, materials);
 
-		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
-		canvas.width = 2048; 
-		canvas.height = 512;
+            let offsetZ = 0;
+            if (rowIndex === 0) offsetZ = 0; 
+            else if (rowIndex === rows.length - 1) offsetZ = rowMaxDepth - place.depth;
+            else offsetZ = (rowMaxDepth - place.depth) / 2;
 
-		ctx.fillStyle = 'white'; 
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.strokeStyle = 'black'; 
-		ctx.lineWidth = 20; ctx.strokeRect(0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = 'black'; 
-		ctx.font = 'bold 160px Arial';
-		ctx.textAlign = 'center'; 
-		ctx.textBaseline = 'middle';
-		const text = place.name.length > 16 ? `${place.name.slice(0, 16)}...` : place.name;
-		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            mesh.position.set(rowX + finalWidth / 2, 1, curZ + offsetZ + place.depth / 2);
+            mesh.userData = place;
 
-		const texture = new THREE.CanvasTexture(canvas);
-		texture.generateMipmaps = false;
-		texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-		texture.minFilter = THREE.LinearFilter;
-		texture.magFilter = THREE.LinearFilter;
-		texture.needsUpdate = true;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fontSize = 80;
+            ctx.font = `bold ${fontSize}px Arial`;
+            
+            const textMetrics = ctx.measureText(place.name);
+            const textPadding = 40;
+            canvas.width = textMetrics.width + textPadding * 2;
+            canvas.height = fontSize + textPadding;
 
-		const labelWidth = place.width * 0.9;
-		const labelHeight = labelWidth * (canvas.height / canvas.width);
-		const labelGeometry = new THREE.PlaneGeometry(labelWidth, labelHeight);		
-		const labelMaterial = new THREE.MeshBasicMaterial({ 
-			map: texture, 
-			transparent: true,
-			depthTest: true,
-			depthWrite: true
-		});
+            ctx.fillStyle = 'white';
+            const r = 20;
+            ctx.beginPath();
+            ctx.moveTo(r, 0);
+            ctx.lineTo(canvas.width - r, 0); ctx.quadraticCurveTo(canvas.width, 0, canvas.width, r);
+            ctx.lineTo(canvas.width, canvas.height - r); ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - r, canvas.height);
+            ctx.lineTo(r, canvas.height); ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - r);
+            ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(place.name, canvas.width / 2, canvas.height / 2);
 
-		const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
-		labelMesh.position.set(0, 1.01, 0);
-		labelMesh.rotation.x = -Math.PI / 2;
-		
-		mesh.add(labelMesh);
-		scene.add(mesh);
-		shopMeshes.push(mesh);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            
+            const visualWidth = Math.min(finalWidth * 0.8, canvas.width / 40); 
+            const visualHeight = visualWidth * (canvas.height / canvas.width);
+            const labelMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(visualWidth, visualHeight),
+                new THREE.MeshBasicMaterial({ map: texture, transparent: true })
+            );
+            labelMesh.position.set(0, 1.02, 0);
+            labelMesh.rotation.x = -Math.PI / 2;
+            
+            mesh.add(labelMesh);
+            group.add(mesh);
+            shopMeshes.push(mesh);
+            rowX += finalWidth + GAP;
+        });
 
-		currentX += place.width + padding;
-	});
-	
-	return shopMeshes;
+        curZ += rowMaxDepth + GAP * 2; 
+    });
+
+    const box = new THREE.Box3().setFromObject(group);
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.set(-center.x, 0, -center.z);
+    scene.add(group);
+    return shopMeshes;
 }
