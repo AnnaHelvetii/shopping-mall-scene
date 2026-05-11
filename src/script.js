@@ -31,7 +31,6 @@ document.getElementById('toggleView').onclick = () => {
 // INTERACTION
 
 initHover(shopMeshes, () => currentCamera);
-
 initClick(shopMeshes, () => currentCamera);
 
 // RESIZE

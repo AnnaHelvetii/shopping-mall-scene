@@ -1,5 +1,5 @@
 export const placesData = [
-	{ id: 'shop_001', name: 'Apple Store', width: 4, depth: 4, color: 0xffaa00, },
+	{ id: 'shop_001', name: 'Ашан', width: 12, depth: 15, color: 0xff0000 },
 	{ id: 'shop_002', name: 'Starbucks', width: 3, depth: 3, color: 0x00aa55, },
 	{ id: 'food_003', name: 'Фуд-корт', width: 8, depth: 6, color: 0xaa44aa, },
 	{ id: 'shop_004', name: 'Zara', width: 6, depth: 5, color: 0x4444aa, },
@@ -74,7 +74,7 @@ export const placesData = [
 	{ id: 'shop_073', name: 'Yves Rocher', width: 3, depth: 2, color: 0x5fa832 },
 	{ id: 'shop_074', name: 'Jo Malone', width: 2, depth: 2, color: 0xffffff },
 	{ id: 'shop_075', name: 'MAC', width: 3, depth: 2, color: 0x000000 },
-	{ id: 'shop_076', name: 'Auchan', width: 12, depth: 15, color: 0xff0000 },
+	{ id: 'shop_076', name: 'Apple Store', width: 4, depth: 4, color: 0xffaa00, },
 	{ id: 'shop_077', name: 'Перекресток', width: 10, depth: 10, color: 0x008000 },
 	{ id: 'shop_078', name: 'Азбука вкуса', width: 8, depth: 7, color: 0x32cd32 },
 	{ id: 'shop_079', name: 'Буквоед', width: 5, depth: 5, color: 0x111111 },
