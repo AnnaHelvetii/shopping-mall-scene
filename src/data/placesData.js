@@ -98,5 +98,5 @@ export const placesData = [
 	{ id: 'shop_097', name: 'Adamant', width: 3, depth: 2, color: 0xffd700 },
 	{ id: 'shop_098', name: 'Tissot', width: 2, depth: 2, color: 0x444444 },
 	{ id: 'shop_099', name: 'Swatch', width: 2, depth: 2, color: 0xff0000 },
-	{ id: 'shop_100', name: 'Мираж Синема', width: 15, depth: 10, color: 0x222222 },
+	{ id: 'shop_100', name: 'Мираж Синема', width: 20, depth: 10, color: 0x222222 },
 ];

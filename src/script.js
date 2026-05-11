@@ -14,7 +14,7 @@ addLights(scene);
 
 // SHOPS
 
-const shopMeshes = createShops(scene, placesData);
+const shopMeshes = createShops(scene, placesData, renderer);
 
 // CAMERAS
 

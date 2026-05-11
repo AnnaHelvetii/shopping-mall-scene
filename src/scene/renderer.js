@@ -9,4 +9,6 @@ renderer.setSize(
 	window.innerHeight
 );
 
+renderer.setPixelRatio(window.devicePixelRatio);
+
 document.body.appendChild(renderer.domElement);

@@ -1,41 +1,72 @@
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
-export function createShops(scene, placesData) {
-	const spacing = 8;
-	const gridSize = 10;
+export function createShops(scene, placesData, renderer) {
 	const shopMeshes = [];
+	const padding = 3;
+	const maxRowWidth = 100;
+	let currentX = 0, currentZ = 0, currentRowDepth = 0;
 
-	placesData.forEach((place, index) => {
+	placesData.forEach((place) => {
+		if (currentX + place.width > maxRowWidth) {
+			currentX = 0;
+			currentZ += currentRowDepth + padding;
+			currentRowDepth = 0;
+		}
+		currentRowDepth = Math.max(currentRowDepth, place.depth);
+
+		const materials = [];
+		for (let i = 0; i < 6; i++) {
+			materials.push(new THREE.MeshStandardMaterial({ color: place.color }));
+		}
+
 		const geometry = new THREE.BoxGeometry(place.width, 2, place.depth);
-		const material = new THREE.MeshStandardMaterial({ color: place.color, });
-		const mesh = new THREE.Mesh(geometry, material);
-		const row = Math.floor(index / gridSize);
-		const col = index % gridSize;
-		mesh.position.x = col * spacing;
-		mesh.position.z = row * spacing;
+		const mesh = new THREE.Mesh(geometry, materials);
+		mesh.position.set(currentX + place.width / 2, 1, currentZ + place.depth / 2);
 		mesh.userData = place;
 
 		const canvas = document.createElement('canvas');
-		canvas.width = 512;
-		canvas.height = 128;
 		const ctx = canvas.getContext('2d');
-		ctx.fillStyle = 'white';
+		canvas.width = 2048; 
+		canvas.height = 512;
+
+		ctx.fillStyle = 'white'; 
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = 'black';
-		ctx.font = 'bold 40px Arial';
-		ctx.textAlign = 'center';
-		ctx.fillText(place.name, canvas.width / 2, 80);
+		ctx.strokeStyle = 'black'; 
+		ctx.lineWidth = 20; ctx.strokeRect(0, 0, canvas.width, canvas.height);
+		ctx.fillStyle = 'black'; 
+		ctx.font = 'bold 160px Arial';
+		ctx.textAlign = 'center'; 
+		ctx.textBaseline = 'middle';
+		const text = place.name.length > 16 ? `${place.name.slice(0, 16)}...` : place.name;
+		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
 		const texture = new THREE.CanvasTexture(canvas);
-		const spriteMaterial = new THREE.SpriteMaterial({ map: texture, });
+		texture.generateMipmaps = false;
+		texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+		texture.minFilter = THREE.LinearFilter;
+		texture.magFilter = THREE.LinearFilter;
+		texture.needsUpdate = true;
 
-		const sprite = new THREE.Sprite(spriteMaterial);
-		sprite.scale.set(12, 3, 1);
-		sprite.position.set(0, 3, 0);
-		mesh.add(sprite);
+		const labelWidth = place.width * 0.9;
+		const labelHeight = labelWidth * (canvas.height / canvas.width);
+		const labelGeometry = new THREE.PlaneGeometry(labelWidth, labelHeight);		
+		const labelMaterial = new THREE.MeshBasicMaterial({ 
+			map: texture, 
+			transparent: true,
+			depthTest: true,
+			depthWrite: true
+		});
+
+		const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
+		labelMesh.position.set(0, 1.01, 0);
+		labelMesh.rotation.x = -Math.PI / 2;
+		
+		mesh.add(labelMesh);
 		scene.add(mesh);
 		shopMeshes.push(mesh);
-	});
 
+		currentX += place.width + padding;
+	});
+	
 	return shopMeshes;
 }
