@@ -28,7 +28,7 @@ document.getElementById('toggleView').onclick = () => {
 		x: targetPos.x,
 		y: targetPos.y,
 		z: targetPos.z,
-		duration: 2.0,
+		duration: 1.5,
 		ease: "expo.inOut",
 		onUpdate: () => {
 			perspectiveCamera.lookAt(cameraTarget);
